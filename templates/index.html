@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>Count</h1>
+<h5 id="num"></h5>
+
+</body>
+<script>
+    ws = new WebSocket('ws://127.0.0.1:8000/ws/ac/')
+    ws.onopen = function(){
+    console.log('Connection Created')
+    ws.send('connection')
+    }
+    ws.onmessage = function(event){
+    console.log(event.data)
+    document.getElementById('num').innerText = event.data
+    }
+    ws.onerror = function(event){
+    console.log('Error Occured',event)
+    }
+    ws.onclose = function(event){
+    console.log('connection closed',event)
+    }
+</script>
+</html>
