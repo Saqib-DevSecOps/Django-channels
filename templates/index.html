@@ -5,25 +5,41 @@
     <title>Title</title>
 </head>
 <body>
-<h1>Count</h1>
-<h5 id="num"></h5>
+<h1>Group Name  {{channel_name}}</h1>
+<textarea id="txt" style="width:800px;height:250px;">
 
+</textarea><br>
+<input id="inp" style="width:800px;height:50px" placeholder="Enter Your Mesage Here">
+<br><br>
+<button type="submit" id="btn"> Send Message</button>
 </body>
+{{channel_name|json_script:"group_name"}}
 <script>
-    ws = new WebSocket('ws://127.0.0.1:8000/ws/ac/')
+    group_name =  JSON.parse(document.getElementById('group_name').textContent)
+    ws = new WebSocket('ws://'+ window.location.host + '/ws/ac/'+ group_name +'/' )
     ws.onopen = function(){
-    console.log('Connection Created')
-    ws.send('connection')
+    console.log("connection created")
     }
     ws.onmessage = function(event){
-    console.log(event.data)
-    document.getElementById('num').innerText = event.data
+    console.log(event)
+    object = JSON.parse(event.data)
+    message = object.msg
+    document.querySelector('#txt').value += message+'\n'
     }
-    ws.onerror = function(event){
-    console.log('Error Occured',event)
-    }
-    ws.onclose = function(event){
+    ws.onclose =function(event){
     console.log('connection closed',event)
+<!--    object = JSON.parse(event.data)-->
+<!--    document.querySelector('#txt').value += object.leave+'\n'-->
+
+    }
+    document.getElementById('btn').onclick = function(event){
+    message = document.getElementById('inp').value
+    ws.send(JSON.stringify({
+    'msg':message
+    }))
+    console.log(message)
+    document.getElementById('inp').value = ''
+
     }
 </script>
 </html>

@@ -1,10 +1,12 @@
 import asyncio
 from time import sleep
-
+import json
+from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer, AsyncConsumer
 from channels.generic.websocket import WebsocketConsumer, AsyncWebsocketConsumer
 # ======================Synchronous Consumer========================================================
 from channels.exceptions import StopConsumer
+
 
 #
 # class MyConsumer(SyncConsumer):
@@ -95,25 +97,61 @@ from channels.exceptions import StopConsumer
 
 class SyncWebsocketConsumers(WebsocketConsumer):
     def connect(self):
+        # get group name from route
+        self.group_name = self.scope['url_route']['kwargs']['channel_name']
+        # create or get group
+        async_to_sync(self.channel_layer.group_add)(self.group_name, self.channel_name)
         self.accept()
 
     def receive(self, text_data=None, bytes_data=None):
-        print(text_data)  # message from client
-        for i in range(10):
-            self.send(text_data=str(i))  # message from server to client
-            sleep(1)
+        # message from Client is came in text data
+        print("message from client", text_data)
+        # convert string into python dict(used form send message)
+        data = json.loads(text_data)
+        print(data)
+        print(data['msg'])
+        # send message into
+        async_to_sync(self.channel_layer.group_send)(
+            self.group_name,
+            dict(type='chat.message', message=data['msg'])
+        )
+
+    # create handler for type chat.message and in handler is chat_message
+    def chat_message(self, event):
+        self.send(json.dumps({'msg': event['message']}))
+
     def disconnect(self, code):
         print('web_socket disconnect ', code)
 
 
 class AsyncWebsocketConsumers(AsyncWebsocketConsumer):
     async def connect(self):
+        # get group name from route
+        self.group_name = self.scope['url_route']['kwargs']['channel_name']
+        # create or get group
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
     async def receive(self, text_data=None, bytes_data=None):
-        print(text_data)  # message from client
-        for i in range(10):
-            await self.send(text_data=str(i))  # message from server to cli
-            await asyncio.sleep(1)
+        # message from Client is came in text data
+        print("message from client", text_data)
+        # convert string into python dict(used form send message)
+        data = json.loads(text_data)
+        print(type(data))
+        print(data)
+        print(data['msg'])
+        # send message into
+        await self.channel_layer.group_send(
+            self.group_name,
+            dict(type='chat.message', message=data['msg'])
+        )
+
+    # create handler for type chat.message and in handler is chat_message
+    async def chat_message(self, event):
+        print('event is',event)
+        await self.send(json.dumps({'msg': event['message']}))
+
     async def disconnect(self, code):
         print('web_socket disconnect ', code)
+        print(self.channel_name)
+
