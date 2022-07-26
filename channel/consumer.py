@@ -2,7 +2,7 @@ import asyncio
 from time import sleep
 
 from channels.consumer import SyncConsumer, AsyncConsumer
-
+from channels.generic.websocket import WebsocketConsumer, AsyncWebsocketConsumer
 # ======================Synchronous Consumer========================================================
 from channels.exceptions import StopConsumer
 
@@ -60,3 +60,34 @@ class MyAsyncConsumer(AsyncConsumer):
     async def websocket_disconnect(self, event):
         print('connection disconnected')
         raise StopConsumer()
+
+# ==========================Generic Web_socket Consumers ===============================================
+
+class WebsocketConsumers(WebsocketConsumer):
+    def connect(self):
+        self.accept()
+
+    def receive(self, text_data=None, bytes_data=None):
+        print(text_data)  # message from client
+        self.send(text_data='saqib')  # message from server to client
+        self.send(bytes_data)  # To send binary frame to client
+        self.close()  # To forcefully reject connection
+        self.close(code=3090)  # Add a custom web_socket Error Code
+
+    def disconnect(self, code):
+        print('web_socket disconnect ', code)
+
+
+class AsyncWebsocketConsumers(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.accept()
+
+    async def receive(self, text_data=None, bytes_data=None):
+        print(text_data)  # message from client
+        await self.send(text_data='saqib')  # message from server to client
+        await self.send(bytes_data)  # To send binary frame to client
+        await self.close()  # To forcefully reject connection
+        await self.close(code=3090)  # Add a custom web_socket Error Code
+
+    async def disconnect(self, code):
+        print('web_socket disconnect ', code)
