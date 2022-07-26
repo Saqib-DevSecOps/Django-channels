@@ -3,10 +3,10 @@ from time import sleep
 import json
 from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer, AsyncConsumer
+from channels.db import database_sync_to_async
 from channels.generic.websocket import WebsocketConsumer, AsyncWebsocketConsumer
 # ======================Synchronous Consumer========================================================
 from channels.exceptions import StopConsumer
-
 
 #
 # class MyConsumer(SyncConsumer):
@@ -93,6 +93,7 @@ from channels.exceptions import StopConsumer
 #
 #     async def disconnect(self, code):
 #         print('web_socket disconnect ', code)
+from channel.models import Group, Chat
 
 
 class SyncWebsocketConsumers(WebsocketConsumer):
@@ -137,21 +138,30 @@ class AsyncWebsocketConsumers(AsyncWebsocketConsumer):
         print("message from client", text_data)
         # convert string into python dict(used form send message)
         data = json.loads(text_data)
-        print(type(data))
-        print(data)
-        print(data['msg'])
-        # send message into
-        await self.channel_layer.group_send(
-            self.group_name,
-            dict(type='chat.message', message=data['msg'])
-        )
+        group = await database_sync_to_async(Group.objects.get)(name=self.group_name)
+        if self.scope['user'].is_authenticated:
+            chat = Chat(
+                group=group,
+                text=data['msg']
+            )
+            await database_sync_to_async(chat.save)()
+            print(type(data))
+            print(data)
+            print(data['msg'])
+            # send message into
+            await self.channel_layer.group_send(
+                self.group_name,
+                dict(type='chat.message', message=data['msg'])
+            )
+        else:
+            await self.send(text_data=json.dumps({'msg':'login required'}))
+        # create handler for type chat.message and in handler is chat_message
 
-    # create handler for type chat.message and in handler is chat_message
     async def chat_message(self, event):
-        print('event is',event)
+        print('event is', event)
         await self.send(json.dumps({'msg': event['message']}))
 
-    async def disconnect(self, code):
-        print('web_socket disconnect ', code)
-        print(self.channel_name)
 
+async def disconnect(self, code):
+    print('web_socket disconnect ', code)
+    print(self.channel_name)

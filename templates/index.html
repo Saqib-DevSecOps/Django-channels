@@ -7,7 +7,9 @@
 <body>
 <h1>Group Name  {{channel_name}}</h1>
 <textarea id="txt" style="width:800px;height:250px;">
-
+{% for chat in chat %}
+    {{chat.text}}
+{% endfor %}
 </textarea><br>
 <input id="inp" style="width:800px;height:50px" placeholder="Enter Your Mesage Here">
 <br><br>
@@ -23,6 +25,7 @@
     ws.onmessage = function(event){
     console.log(event)
     object = JSON.parse(event.data)
+    console.log(object)
     message = object.msg
     document.querySelector('#txt').value += message+'\n'
     }
